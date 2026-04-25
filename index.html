@@ -398,6 +398,35 @@
       margin-top: 6px;
     }
 
+  
+    .auth-panel {
+      background: rgba(255,255,255,.82);
+      border: 1px solid rgba(255,255,255,.85);
+      border-radius: 22px;
+      padding: 12px 14px;
+      margin: 14px 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      box-shadow: 0 10px 22px rgba(15,23,42,.08);
+    }
+    .auth-status { color: var(--sub); font-weight: 900; line-height: 1.6; }
+    .auth-status strong { color: var(--main); }
+    .auth-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .logout-btn { background: rgba(15,23,42,.12); color: #172033; box-shadow: none; }
+    .cloud-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(99,102,241,.12);
+      color: var(--main);
+      font-size: 12px;
+      font-weight: 900;
+      margin-left: 6px;
+    }
+
   </style>
 </head>
 <body>
@@ -415,6 +444,15 @@
     <div class="brand-mini">📅 ・ 📝 ・ 📚 ・ ⏰</div>
   </div>
   <div class="now-page">現在のページ：<span id="currentPageName">メイン</span></div>
+  <div class="auth-panel">
+    <div class="auth-status" id="loginStatus">
+      未ログイン <span class="cloud-badge">端末内保存</span>
+    </div>
+    <div class="auth-buttons">
+      <button onclick="login()">Googleでログイン</button>
+      <button class="logout-btn" onclick="logout()">ログアウト</button>
+    </div>
+  </div>
   <div class="nav">
     <button id="nav-main" onclick="showPage('main')">メイン</button>
     <button id="nav-schedule" onclick="showPage('schedule')">時間割</button>
@@ -547,11 +585,11 @@ let periodTimes=JSON.parse(localStorage.getItem("periodTimes"))||{1:{start:"09:0
 function showPage(id){currentPage=id;document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active-nav"));document.getElementById("nav-"+id).classList.add("active-nav");currentPageName.textContent=pageNames[id];renderAll();}
 function setTheme(bg,card,text,main,accent){document.documentElement.style.setProperty("--bg",bg);document.documentElement.style.setProperty("--card",card);document.documentElement.style.setProperty("--text",text);document.documentElement.style.setProperty("--main",main);document.documentElement.style.setProperty("--accent",accent);}
 function applyTheme(){themeSelect.value=theme;if(theme==="blue")setTheme("#eef6ff","#fff","#172033","#2563eb","#38bdf8");else if(theme==="green")setTheme("#f0fdf4","#fff","#172033","#16a34a","#22c55e");else if(theme==="dark")setTheme("#0f172a","#1e293b","#f8fafc","#6366f1","#8b5cf6");else if(theme==="pink")setTheme("#fff1f8","#fff","#172033","#ec4899","#f472b6");else setTheme("#eef2f7","#fff","#172033","#6366f1","#8b5cf6");}
-function changeTheme(){theme=themeSelect.value;localStorage.setItem("theme",theme);renderAll();}
-function saveProfile(){profile={universityName:universityName.value,faculty:faculty.value,department:department.value,major:major.value,grade:grade.value,termType:termType.value};localStorage.setItem("profile",JSON.stringify(profile));showProfile();}
+function changeTheme(){theme=themeSelect.value;localStorage.setItem("theme",theme);renderAll();requestCloudSave();}
+function saveProfile(){profile={universityName:universityName.value,faculty:faculty.value,department:department.value,major:major.value,grade:grade.value,termType:termType.value};localStorage.setItem("profile",JSON.stringify(profile));showProfile();requestCloudSave();}
 function showProfile(){universityName.value=profile.universityName||"";faculty.value=profile.faculty||"";department.value=profile.department||"";major.value=profile.major||"";grade.value=profile.grade||"";termType.value=profile.termType||"";profileView.innerHTML=`<p>${profile.universityName||"大学名未設定"}　${profile.faculty||""} ${profile.department||""} ${profile.major||""}<br>学年：${profile.grade||"未設定"}　学期制度：${profile.termType||"未設定"}</p>`;}
 function renderPeriodSettings(){periodSettings.innerHTML=periods.map(p=>`<div>${p}限：<input id="start${p}" type="time" value="${periodTimes[p].start}">〜<input id="end${p}" type="time" value="${periodTimes[p].end}"></div>`).join("");}
-function savePeriodTimes(){periods.forEach(p=>periodTimes[p]={start:document.getElementById("start"+p).value,end:document.getElementById("end"+p).value});localStorage.setItem("periodTimes",JSON.stringify(periodTimes));alert("時限時間を保存しました");renderAll();}
+function savePeriodTimes(){periods.forEach(p=>periodTimes[p]={start:document.getElementById("start"+p).value,end:document.getElementById("end"+p).value});localStorage.setItem("periodTimes",JSON.stringify(periodTimes));alert("時限時間を保存しました");renderAll();requestCloudSave();}
 function toggleColorPanel(key){document.getElementById("panel_"+key).classList.toggle("open");}
 function chooseColor(key,color){document.getElementById("color_"+key).value=color;document.getElementById("cell_"+key).style.background=color;document.getElementById("preview_"+key).style.background=color;document.querySelectorAll(".dot_"+key).forEach(dot=>dot.classList.remove("selected"));document.getElementById("dot_"+key+"_"+color.replace("#","")).classList.add("selected");document.getElementById("panel_"+key).classList.remove("open");}
 function renderColorDots(key,selectedColor){let html=`<input type="hidden" id="color_${key}" value="${selectedColor}"><div class="selected-color-preview" id="preview_${key}" style="background:${selectedColor}"></div><button type="button" class="color-toggle" onclick="toggleColorPanel('${key}')">色を選ぶ</button><div id="panel_${key}" class="color-panel"><div class="color-palette">`; (palettes[theme]||palettes.default).forEach(color=>{html+=`<div id="dot_${key}_${color.replace("#","")}" class="color-dot dot_${key} ${color===selectedColor?"selected":""}" style="background:${color}" onclick="chooseColor('${key}','${color}')"></div>`}); return html+"</div></div>";}
@@ -588,14 +626,14 @@ function clearScheduleCell(key){
   };
 
   localStorage.setItem("schedule",JSON.stringify(schedule));
-  renderAll();
+  renderAll();requestCloudSave();
 }
 
 function renderScheduleTable(){let html="<table><tr><th>時限</th>"+days.map(d=>`<th>${d}</th>`).join("")+"</tr>";periods.forEach(p=>{html+=`<tr><th>${p}限<br>${periodTimes[p].start}〜${periodTimes[p].end}</th>`;days.forEach(day=>{const key=day+p,item=schedule[key]||{},isEmpty=!item.subject,colors=palettes[theme]||palettes.default,bg=isEmpty?"#ffffff":(item.color||colors[(p+days.indexOf(day))%colors.length]),format=item.format||"対面授業";html+=`<td id="cell_${key}" style="background:${bg}">${isEmpty?`<div class="format-tag">空きコマ</div>`:""}<input class="cell-input" id="subject_${key}" placeholder="科目名" value="${item.subject||""}"><input class="cell-input" id="teacher_${key}" placeholder="先生" value="${item.teacher||""}"><input class="cell-input" id="room_${key}" placeholder="教室番号" value="${item.room||""}"><select class="cell-select" id="format_${key}"><option ${format==="対面授業"?"selected":""}>対面授業</option><option ${format==="ブレンド型オンデマンド授業"?"selected":""}>ブレンド型オンデマンド授業</option><option ${format==="オンデマンド授業"?"selected":""}>オンデマンド授業</option></select>${!isEmpty?`<div class="format-tag">${format}</div>`:""}<div class="color-label">現在の色</div>${renderColorDots(key,bg)}<button type="button" class="schedule-delete" onclick="clearScheduleCell('${key}')">このコマを削除</button></td>`});html+="</tr>"});scheduleTable.innerHTML=html+"</table>";}
 function isOndemandFormat(f){return f==="オンデマンド授業"||f==="ブレンド型オンデマンド授業";}
 function toggleOndemandTime(key){document.getElementById("timeWindow_"+key).classList.toggle("show",document.getElementById("deadlineType_"+key).value==="指定日＋指定時間内");}
 function renderOndemandList(){let cards="";days.forEach(day=>periods.forEach(p=>{const key=day+p,item=schedule[key]||{};if(item.subject&&isOndemandFormat(item.format)){const bg=item.color||"#dbeafe",type=item.deadlineType||"終日";cards+=`<div class="ondemand-card" style="background:${bg}"><h3>${item.subject}</h3><p>${day}曜 ${p}限 / ${item.format}<br>先生：${item.teacher||"未設定"}<br>教室：${item.room||"なし・未設定"}</p><select id="deadlineType_${key}" onchange="toggleOndemandTime('${key}')"><option ${type==="終日"?"selected":""}>終日</option><option ${type==="指定日まで"?"selected":""}>指定日まで</option><option ${type==="指定日＋指定時間内"?"selected":""}>指定日＋指定時間内</option></select><input id="deadlineDate_${key}" type="date" value="${item.deadlineDate||""}"><div id="timeWindow_${key}" class="time-window ${type==="指定日＋指定時間内"?"show":""}"><input id="ondemandStart_${key}" type="time" value="${item.ondemandStart||""}"><input id="ondemandEnd_${key}" type="time" value="${item.ondemandEnd||""}"></div></div>`}}));ondemandList.innerHTML=cards?`<div class="ondemand-grid">${cards}</div>`:"<p>オンデマンド系の授業はまだ登録されていません。</p>";}
-function saveSchedule(){days.forEach(day=>periods.forEach(p=>{const key=day+p,old=schedule[key]||{};schedule[key]={subject:document.getElementById("subject_"+key).value,teacher:document.getElementById("teacher_"+key).value,room:document.getElementById("room_"+key).value,format:document.getElementById("format_"+key).value,color:document.getElementById("subject_"+key).value?document.getElementById("color_"+key).value:"#ffffff",deadlineType:old.deadlineType||"終日",deadlineDate:old.deadlineDate||"",ondemandStart:old.ondemandStart||"",ondemandEnd:old.ondemandEnd||""}}));days.forEach(day=>periods.forEach(p=>{const key=day+p,item=schedule[key]||{},typeEl=document.getElementById("deadlineType_"+key);if(typeEl){item.deadlineType=typeEl.value;item.deadlineDate=document.getElementById("deadlineDate_"+key)?.value||"";item.ondemandStart=document.getElementById("ondemandStart_"+key)?.value||"";item.ondemandEnd=document.getElementById("ondemandEnd_"+key)?.value||"";schedule[key]=item}}));localStorage.setItem("schedule",JSON.stringify(schedule));alert("時間割を保存しました");renderAll();}
+function saveSchedule(){days.forEach(day=>periods.forEach(p=>{const key=day+p,old=schedule[key]||{};schedule[key]={subject:document.getElementById("subject_"+key).value,teacher:document.getElementById("teacher_"+key).value,room:document.getElementById("room_"+key).value,format:document.getElementById("format_"+key).value,color:document.getElementById("subject_"+key).value?document.getElementById("color_"+key).value:"#ffffff",deadlineType:old.deadlineType||"終日",deadlineDate:old.deadlineDate||"",ondemandStart:old.ondemandStart||"",ondemandEnd:old.ondemandEnd||""}}));days.forEach(day=>periods.forEach(p=>{const key=day+p,item=schedule[key]||{},typeEl=document.getElementById("deadlineType_"+key);if(typeEl){item.deadlineType=typeEl.value;item.deadlineDate=document.getElementById("deadlineDate_"+key)?.value||"";item.ondemandStart=document.getElementById("ondemandStart_"+key)?.value||"";item.ondemandEnd=document.getElementById("ondemandEnd_"+key)?.value||"";schedule[key]=item}}));localStorage.setItem("schedule",JSON.stringify(schedule));alert("時間割を保存しました");renderAll();requestCloudSave();}
 
 function getUniqueSubjectsWithSlots(){
   const map={};
@@ -655,6 +693,7 @@ function saveRecurringAssignments(){
     };
   });
   localStorage.setItem("recurringAssignments",JSON.stringify(recurringAssignments));
+  requestCloudSave();
   alert("毎回課題設定を保存しました");
   renderAll();
 }
@@ -712,6 +751,7 @@ function autoAddRecurringTasks(){
   if(changed){
     localStorage.setItem("tasks",JSON.stringify(tasks));
     localStorage.setItem("recurringAssignments",JSON.stringify(recurringAssignments));
+    requestCloudSave();
   }
 }
 
@@ -724,14 +764,14 @@ function getSubjectTasks(subject){return tasks.filter(t=>t.className===subject);
 function getOndemandDeadlineText(item){if(!isOndemandFormat(item.format))return"";if(!item.deadlineDate)return"オンデマンド期限：未設定";if(item.deadlineType==="指定日＋指定時間内")return`オンデマンド期限：${item.deadlineDate} ${item.ondemandStart||"--:--"}〜${item.ondemandEnd||"--:--"}`;return`オンデマンド期限：${item.deadlineDate}（${item.deadlineType||"終日"}）`;}
 function renderTodayClasses(){const today=getTodayDayName();if(!today){todayClasses.innerHTML="<p>今日は日曜日です。登録された授業はありません。</p>";return}let items=[];periods.forEach(p=>{const item=schedule[today+p];if(item&&item.subject)items.push({period:p,item,status:getClassStatus(p)})});items.sort((a,b)=>getStatusOrder(a.status)-getStatusOrder(b.status));let html=`<h3>今日は${today}曜日</h3>`;if(!items.length)html+="<p>今日の授業は登録されていません。</p>";items.forEach(o=>{const rel=getSubjectTasks(o.item.subject),un=rel.filter(t=>!t.done).length,fin=rel.filter(t=>t.done).length,taskInfo=rel.length?`課題あり：未完了 ${un}件 / 完了 ${fin}件`:"課題なし",deadlineInfo=getOndemandDeadlineText(o.item);html+=`<div class="today-card ${getStatusClass(o.status)}" style="background:${o.item.color||"#dbeafe"}"><h2>${o.period}限：${o.item.subject}</h2><p>時間：${periodTimes[o.period].start}〜${periodTimes[o.period].end}<br>授業形式：${o.item.format||"対面授業"}<br>先生：${o.item.teacher||"未設定"}<br>教室：${o.item.room||"未設定"}<br>${deadlineInfo?deadlineInfo+"<br>":""}${taskInfo}</p><span class="status">${o.status}</span><br><br><button onclick="quickAddFromToday('${o.item.subject}')">この授業の課題を追加</button></div>`});todayClasses.innerHTML=html;}
 function quickAddFromToday(subject){showPage("assignments");className.value=subject;linkedSubject.value=subject;taskName.focus();}
-function addTask(){if(!className.value||!taskName.value||!deadline.value){alert("授業名・課題名・締切日を入力してね");return}tasks.push({className:className.value,taskName:taskName.value,deadline:deadline.value,priority:priority.value,memo:memo.value,done:false});localStorage.setItem("tasks",JSON.stringify(tasks));className.value="";taskName.value="";deadline.value="";memo.value="";linkedSubject.value="";renderAll();}
+function addTask(){if(!className.value||!taskName.value||!deadline.value){alert("授業名・課題名・締切日を入力してね");return}tasks.push({className:className.value,taskName:taskName.value,deadline:deadline.value,priority:priority.value,memo:memo.value,done:false});localStorage.setItem("tasks",JSON.stringify(tasks));requestCloudSave();className.value="";taskName.value="";deadline.value="";memo.value="";linkedSubject.value="";renderAll();}
 function daysUntil(deadline){const today=new Date();today.setHours(0,0,0,0);const d=new Date(deadline);d.setHours(0,0,0,0);return Math.ceil((d-today)/(1000*60*60*24));}
 function deadlineText(deadline){const diff=daysUntil(deadline);if(diff<0)return`<span class="danger">締切超過 ${Math.abs(diff)}日</span>`;if(diff===0)return`<span class="danger">あと0日（今日まで）</span>`;if(diff<=3)return`<span class="danger">あと${diff}日</span>`;return`<span class="safe">あと${diff}日</span>`;}
 function deadlineClass(deadline){const diff=daysUntil(deadline);return diff<=0?"urgent":diff<=3?"soon":"normal";}
 function renderTasks(){activeTaskList.innerHTML="";doneTaskList.innerHTML="";tasks.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));tasks.forEach((t,i)=>{const div=document.createElement("div");div.className="task "+(t.done?"done":deadlineClass(t.deadline));div.innerHTML=`<strong>${t.className}</strong><br>課題：${t.taskName}<br>締切：${t.deadline}　${deadlineText(t.deadline)}<br>優先度：${t.priority||"未設定"}<br>${t.memo?"メモ："+t.memo+"<br>":""}<button onclick="toggleTask(${i})">${t.done?"戻す":"完了"}</button><button onclick="deleteTask(${i})">削除</button>`;(t.done?doneTaskList:activeTaskList).appendChild(div)});}
-function toggleTask(i){tasks[i].done=!tasks[i].done;localStorage.setItem("tasks",JSON.stringify(tasks));renderAll();} function deleteTask(i){tasks.splice(i,1);localStorage.setItem("tasks",JSON.stringify(tasks));renderAll();}
-function addEvent(){if(!eventTitle.value||!eventDate.value){alert("予定名と日付を入力してね");return}events.push({title:eventTitle.value,type:eventType.value,date:eventDate.value,start:eventStart.value,end:eventEnd.value,color:eventColor.value,memo:eventMemo.value});localStorage.setItem("events",JSON.stringify(events));eventTitle.value="";eventStart.value="";eventEnd.value="";eventMemo.value="";renderAll();}
-function deleteEvent(i){events.splice(i,1);localStorage.setItem("events",JSON.stringify(events));renderAll();}
+function toggleTask(i){tasks[i].done=!tasks[i].done;localStorage.setItem("tasks",JSON.stringify(tasks));renderAll();requestCloudSave();} function deleteTask(i){tasks.splice(i,1);localStorage.setItem("tasks",JSON.stringify(tasks));renderAll();requestCloudSave();}
+function addEvent(){if(!eventTitle.value||!eventDate.value){alert("予定名と日付を入力してね");return}events.push({title:eventTitle.value,type:eventType.value,date:eventDate.value,start:eventStart.value,end:eventEnd.value,color:eventColor.value,memo:eventMemo.value});localStorage.setItem("events",JSON.stringify(events));requestCloudSave();eventTitle.value="";eventStart.value="";eventEnd.value="";eventMemo.value="";renderAll();}
+function deleteEvent(i){events.splice(i,1);localStorage.setItem("events",JSON.stringify(events));renderAll();requestCloudSave();}
 function changeMonth(n){currentMonth.setMonth(currentMonth.getMonth()+n);renderCalendar();}
 function renderCalendar(){const year=currentMonth.getFullYear(),month=currentMonth.getMonth();calendarMonth.textContent=year+"年 "+(month+1)+"月";const first=new Date(year,month,1),last=new Date(year,month+1,0);let html=`<div class="calendar-grid">`;["日","月","火","水","木","金","土"].forEach(d=>html+=`<div class="calendar-head">${d}</div>`);for(let i=0;i<first.getDay();i++)html+=`<div class="calendar-day empty"></div>`;for(let d=1;d<=last.getDate();d++){const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;let dayEvents=[];events.forEach((e,i)=>{if(e.date===dateStr)dayEvents.push({...e,index:i,isUser:true})});tasks.forEach(t=>{if(t.deadline===dateStr)dayEvents.push({title:"課題："+t.className+" "+t.taskName,color:t.done?"#e5e7eb":"#ffe4e6",start:"",end:"",done:t.done})});html+=`<div class="calendar-day"><div class="calendar-date">${d}</div>`;dayEvents.forEach(ev=>{html+=`<div class="calendar-event" style="background:${ev.color}"><strong>${ev.title}</strong><br>${ev.type?ev.type+"<br>":""}${ev.start?ev.start+"〜"+(ev.end||"")+"<br>":""}${ev.done!==undefined?(ev.done?"完了":"未完了")+"<br>":""}${ev.memo?ev.memo+"<br>":""}${ev.isUser?`<button class="event-delete" onclick="deleteEvent(${ev.index})">削除</button>`:""}</div>`});html+=`</div>`}calendarGrid.innerHTML=html+"</div>";}
 function exportData(){const data={profile,theme,tasks,schedule,periodTimes,events,recurringAssignments};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="UAM_backup.json";a.click();URL.revokeObjectURL(url);}
@@ -833,7 +873,142 @@ function prevTutorial(){
   }
 }
 
+
+window.getUAMData = function(){
+  return { profile, theme, tasks, schedule, periodTimes, events, recurringAssignments };
+};
+
+window.applyUAMData = function(data){
+  profile = data.profile || {};
+  theme = data.theme || "default";
+  tasks = data.tasks || [];
+  schedule = data.schedule || {};
+  periodTimes = data.periodTimes || periodTimes;
+  events = data.events || [];
+  recurringAssignments = data.recurringAssignments || {};
+
+  localStorage.setItem("profile", JSON.stringify(profile));
+  localStorage.setItem("theme", theme);
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  localStorage.setItem("schedule", JSON.stringify(schedule));
+  localStorage.setItem("periodTimes", JSON.stringify(periodTimes));
+  localStorage.setItem("events", JSON.stringify(events));
+  localStorage.setItem("recurringAssignments", JSON.stringify(recurringAssignments));
+
+  renderAll();
+};
+
+function requestCloudSave(){
+  if(window.saveToCloud){ window.saveToCloud(); }
+}
+
 renderAll();showPage("main");setInterval(renderTodayClasses,60000);
 </script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAh7wYq9ibO04_julWYg_kfhgNuGlcDeSg",
+  authDomain: "uam-university.firebaseapp.com",
+  projectId: "uam-university",
+  storageBucket: "uam-university.firebasestorage.app",
+  messagingSenderId: "558020267054",
+  appId: "1:558020267054:web:00315d4dde685f024f23bf",
+  measurementId: "G-7HJBYXC7ZQ"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+let currentUser = null;
+let cloudReady = false;
+let saving = false;
+
+function setLoginStatus(text, mode){
+  const badge = mode === "cloud" ? "クラウド同期" : mode === "saving" ? "保存中" : "端末内保存";
+  const status = document.getElementById("loginStatus");
+  if(status){ status.innerHTML = text + ' <span class="cloud-badge">' + badge + '</span>'; }
+}
+
+window.login = async function(){
+  try{
+    const result = await signInWithPopup(auth, provider);
+    currentUser = result.user;
+    setLoginStatus("ログイン中：<strong>" + (currentUser.displayName || "UAMユーザー") + "</strong>", "cloud");
+    await loadDataFromCloud();
+    await saveToCloud();
+  }catch(error){
+    alert("ログインに失敗しました：" + error.message);
+    console.error(error);
+  }
+};
+
+window.logout = async function(){
+  try{
+    await saveToCloud();
+    await signOut(auth);
+    currentUser = null;
+    cloudReady = false;
+    setLoginStatus("未ログイン", "local");
+  }catch(error){
+    alert("ログアウトに失敗しました：" + error.message);
+    console.error(error);
+  }
+};
+
+async function saveToCloud(){
+  if(!currentUser || saving || !window.getUAMData) return;
+  saving = true;
+  setLoginStatus("ログイン中：<strong>" + (currentUser.displayName || "UAMユーザー") + "</strong>", "saving");
+  try{
+    const data = window.getUAMData();
+    await setDoc(doc(db, "users", currentUser.uid), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+    setLoginStatus("ログイン中：<strong>" + (currentUser.displayName || "UAMユーザー") + "</strong>", "cloud");
+  }catch(error){
+    console.error(error);
+    setLoginStatus("ログイン中：<strong>" + (currentUser.displayName || "UAMユーザー") + "</strong>", "local");
+  }finally{
+    saving = false;
+  }
+}
+
+async function loadDataFromCloud(){
+  if(!currentUser) return;
+  const docRef = doc(db, "users", currentUser.uid);
+  const snap = await getDoc(docRef);
+  if(snap.exists() && window.applyUAMData){
+    window.applyUAMData(snap.data());
+  }
+}
+
+window.saveToCloud = saveToCloud;
+
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    currentUser = user;
+    cloudReady = true;
+    setLoginStatus("ログイン中：<strong>" + (user.displayName || "UAMユーザー") + "</strong>", "cloud");
+    await loadDataFromCloud();
+  }else{
+    currentUser = null;
+    cloudReady = false;
+    setLoginStatus("未ログイン", "local");
+  }
+});
+
+setInterval(() => {
+  if(currentUser && cloudReady){ saveToCloud(); }
+}, 8000);
+
+window.addEventListener("beforeunload", () => {
+  if(currentUser && cloudReady){ saveToCloud(); }
+});
+</script>
+
 </body>
 </html>
