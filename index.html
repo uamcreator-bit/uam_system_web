@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>大学課題管理 UAM</title>
+  <style>
+    :root {
+      --bg:#eef2f7; --card:#ffffff; --text:#172033; --sub:#64748b;
+      --main:#6366f1; --accent:#8b5cf6; --glass:rgba(255,255,255,0.78);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:"Segoe UI","Hiragino Sans",sans-serif;
+      background:radial-gradient(circle at top left,#dbeafe,transparent 35%),
+                 radial-gradient(circle at top right,#f3e8ff,transparent 30%),var(--bg);
+      color:var(--text);padding:28px;
+    }
+    .app{max-width:1280px;margin:auto}
+    .hero{background:linear-gradient(135deg,var(--main),var(--accent));color:white;padding:28px;border-radius:30px;box-shadow:0 20px 40px rgba(99,102,241,.25);margin-bottom:18px}
+    .hero h1{margin:0;font-size:34px;letter-spacing:.04em}.hero p{margin:8px 0 0;opacity:.9}
+    .now-page{background:rgba(255,255,255,.75);padding:12px 16px;border-radius:18px;margin-bottom:14px;color:var(--sub);font-weight:700;box-shadow:0 8px 18px rgba(15,23,42,.06)}
+    .now-page span{color:var(--main)}
+    .nav{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;background:var(--glass);backdrop-filter:blur(14px);padding:10px;border-radius:22px;box-shadow:0 10px 25px rgba(15,23,42,.08)}
+    .nav button{flex:1;min-width:110px;padding:13px;border:none;border-radius:16px;background:transparent;color:var(--sub);font-weight:800;cursor:pointer;transition:.2s}
+    .nav button:hover{background:rgba(99,102,241,.1);color:var(--main)}
+    .nav button.active-nav{background:linear-gradient(135deg,var(--main),var(--accent));color:white;box-shadow:0 8px 20px rgba(99,102,241,.35)}
+    .page{display:none;background:var(--glass);backdrop-filter:blur(14px);padding:24px;border-radius:30px;box-shadow:0 16px 35px rgba(15,23,42,.1)}
+    .page.active{display:block}.page-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.page-title h2{margin:0;font-size:26px}
+    .badge{background:rgba(99,102,241,.12);color:var(--main);padding:8px 12px;border-radius:999px;font-weight:800;font-size:13px}
+    .hint{background:rgba(99,102,241,.09);border:1px solid rgba(99,102,241,.16);color:var(--sub);padding:12px 14px;border-radius:16px;margin:12px 0;line-height:1.7;font-size:14px}
+    .section{background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.8);padding:18px;border-radius:24px;margin:16px 0}
+    input,select,textarea{padding:11px;margin:5px;border-radius:13px;border:1px solid #d1d5db;outline:none;background:white}
+    input:focus,select:focus,textarea:focus{border-color:var(--main);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+    textarea{width:96%;height:80px;resize:vertical}
+    button{padding:10px 14px;margin:4px;border:none;border-radius:14px;background:linear-gradient(135deg,var(--main),var(--accent));color:white;font-weight:800;cursor:pointer;transition:.18s}
+    button:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(99,102,241,.25)}
+    table{width:100%;border-collapse:separate;border-spacing:9px;color:#172033}
+    th{background:#f1f5f9;padding:12px;border-radius:16px;font-size:14px}
+    td{padding:11px;border-radius:20px;vertical-align:top;box-shadow:0 10px 22px rgba(15,23,42,.10);min-width:135px;transition:.2s;border:2px solid rgba(255,255,255,.65)}
+    td:hover{transform:translateY(-2px)}
+    .cell-input,.cell-select{width:96%;margin:4px 0;border:none;background:rgba(255,255,255,.88);font-size:13px}
+    .format-tag{display:inline-block;margin-top:6px;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900;background:rgba(255,255,255,.75);color:#334155}
+    .color-label{font-size:12px;font-weight:900;color:rgba(15,23,42,.72);margin-top:6px}
+    .selected-color-preview{height:26px;border-radius:999px;margin-top:7px;border:2px solid rgba(255,255,255,.9);box-shadow:inset 0 0 0 1px rgba(15,23,42,.12)}
+    .color-toggle{width:100%;margin-top:6px;padding:7px 9px;font-size:12px;background:rgba(255,255,255,.72);color:#172033;border:1px solid rgba(15,23,42,.12);box-shadow:none}
+    .color-panel{display:none;margin-top:8px;padding:8px;background:rgba(255,255,255,.62);border-radius:14px}.color-panel.open{display:block}
+    .color-palette{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+    .color-dot{height:24px;border-radius:999px;border:2px solid rgba(255,255,255,.9);cursor:pointer;box-shadow:0 3px 8px rgba(15,23,42,.18);transition:.15s}
+    .color-dot:hover{transform:scale(1.12)}.color-dot.selected{outline:3px solid rgba(15,23,42,.65);transform:scale(1.08)}
+    .ondemand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px}
+    .ondemand-card{padding:16px;border-radius:22px;box-shadow:0 12px 24px rgba(15,23,42,.12);color:#172033;border:2px solid rgba(255,255,255,.65)}
+    .ondemand-card h3{margin:0 0 8px;text-align:left}.ondemand-card input,.ondemand-card select{width:95%;margin:5px 0;background:rgba(255,255,255,.9);border:none}
+    .time-window{display:none}.time-window.show{display:block}
+    .today-card{padding:22px;border-radius:26px;margin:14px 0;color:#172033;box-shadow:0 16px 30px rgba(15,23,42,.14)}
+    .current-class{border:4px solid rgba(15,23,42,.85);transform:scale(1.015)}.next-class{border:3px dashed rgba(15,23,42,.7)}.ended-class{opacity:.55;transform:scale(.98)}
+    .status{font-weight:900;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.75);display:inline-block;margin-top:8px}
+    .task{padding:16px;border-radius:20px;margin:12px 0;color:#172033;box-shadow:0 10px 22px rgba(15,23,42,.1)}
+    .urgent{background:#ffe1e1}.soon{background:#fff2bf}.normal{background:#dcfce7}.done{background:#e5e7eb;opacity:.72;text-decoration:line-through}
+    .danger{color:#dc2626;font-weight:900}.safe{color:#16a34a;font-weight:900}
+    .calendar-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}.calendar-month{font-size:24px;font-weight:900}
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.calendar-head{text-align:center;font-weight:900;color:var(--sub);padding:8px}
+    .calendar-day{min-height:130px;background:rgba(255,255,255,.9);border-radius:18px;padding:10px;box-shadow:0 8px 18px rgba(15,23,42,.08);border:1px solid rgba(255,255,255,.8)}
+    .calendar-day.empty{opacity:.35}.calendar-date{font-weight:900;margin-bottom:6px}.calendar-event{padding:6px 8px;border-radius:10px;margin:5px 0;font-size:12px;color:#172033;line-height:1.4;word-break:break-word}
+    .event-delete{background:rgba(15,23,42,.18);color:#172033;padding:4px 7px;font-size:11px;margin-top:4px}
+    .calendar-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:center}
+    .backup-box{text-align:center;padding:22px;border:2px dashed #a5b4fc;border-radius:24px;background:rgba(255,255,255,.65)}
+    .save-bar{position:sticky;bottom:12px;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);border-radius:18px;padding:10px;text-align:center;margin-top:12px;box-shadow:0 12px 25px rgba(15,23,42,.14)}
+
+    .brand-logo {
+      width: 170px;
+      height: 170px;
+      margin: 0 auto 14px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 16px 24px rgba(15,23,42,0.18));
+      cursor: pointer;
+    }
+
+    .brand-logo::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 6px solid transparent;
+      background:
+        linear-gradient(white, white) padding-box,
+        linear-gradient(135deg, #06b6d4, #6366f1, #ec4899) border-box;
+      opacity: 0.95;
+    }
+
+    .brand-logo::after {
+      content: "✦";
+      position: absolute;
+      top: 18px;
+      left: 22px;
+      font-size: 25px;
+      color: #38bdf8;
+      text-shadow: 88px 8px #a855f7, 45px 128px #6366f1;
+    }
+
+    .logo-core {
+      position: relative;
+      z-index: 2;
+      width: 132px;
+      height: 132px;
+      display: grid;
+      place-items: center;
+    }
+
+    .logo-letters {
+      font-size: 54px;
+      font-weight: 1000;
+      letter-spacing: -5px;
+      line-height: 1;
+      background: linear-gradient(90deg, #06b6d4, #6366f1, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 10px 24px rgba(15,23,42,0.18);
+    }
+
+    .logo-cap {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 56px;
+      height: 34px;
+    }
+
+    .logo-cap::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 0;
+      width: 48px;
+      height: 28px;
+      background: #0f2f6b;
+      clip-path: polygon(50% 0%, 100% 38%, 50% 76%, 0% 38%);
+      border-radius: 4px;
+    }
+
+    .logo-cap::after {
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      width: 24px;
+      height: 12px;
+      background: #0f2f6b;
+      border-radius: 0 0 14px 14px;
+      box-shadow: 22px 1px 0 -8px #0f2f6b;
+    }
+
+    .logo-book {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 54px;
+      height: 30px;
+    }
+
+    .logo-book::before,
+    .logo-book::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      width: 27px;
+      height: 28px;
+      background: rgba(255,255,255,0.86);
+      border: 4px solid #0f2f6b;
+      border-radius: 4px 12px 4px 4px;
+    }
+
+    .logo-book::before {
+      left: 0;
+      transform: skewY(-9deg);
+      border-right: 2px solid #0f2f6b;
+    }
+
+    .logo-book::after {
+      right: 0;
+      transform: skewY(9deg);
+      border-left: 2px solid #0f2f6b;
+    }
+
+    .brand-mini {
+      display: inline-flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+      opacity: 0.95;
+      font-size: 22px;
+    }
+
+  
+    /* === Game-like Tutorial === */
+    .tutorial-btn {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 900;
+      border-radius: 999px;
+      padding: 14px 18px;
+      background: linear-gradient(135deg, #06b6d4, #6366f1, #ec4899);
+      box-shadow: 0 14px 28px rgba(99,102,241,.32);
+    }
+
+    .tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 25% 20%, rgba(56,189,248,.30), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(236,72,153,.25), transparent 26%),
+        rgba(15,23,42,.62);
+      backdrop-filter: blur(10px);
+    }
+
+    .tutorial-overlay.show {
+      display: flex;
+    }
+
+    .tutorial-card {
+      width: min(720px, 96vw);
+      background: rgba(255,255,255,.94);
+      border: 2px solid rgba(255,255,255,.85);
+      border-radius: 30px;
+      padding: 24px;
+      box-shadow: 0 30px 70px rgba(15,23,42,.35);
+      color: #172033;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tutorial-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(99,102,241,.11), transparent 38%),
+        radial-gradient(circle at top right, rgba(236,72,153,.16), transparent 36%);
+      pointer-events: none;
+    }
+
+    .tutorial-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .tutorial-stage {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: .04em;
+      margin-bottom: 10px;
+    }
+
+    .tutorial-title {
+      font-size: 28px;
+      font-weight: 1000;
+      margin: 0 0 8px;
+    }
+
+    .tutorial-text {
+      line-height: 1.85;
+      color: #475569;
+      font-weight: 700;
+      margin: 8px 0 16px;
+    }
+
+    .tutorial-quest {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 14px;
+      margin: 14px 0;
+    }
+
+    .tutorial-quest strong {
+      color: #4f46e5;
+    }
+
+    .tutorial-progress {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 16px 0 10px;
+    }
+
+    .tutorial-progress-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #06b6d4, #6366f1, #ec4899);
+      transition: .25s;
+    }
+
+    .tutorial-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .tutorial-actions button {
+      min-width: 120px;
+    }
+
+    .tutorial-skip {
+      background: #e2e8f0;
+      color: #172033;
+      box-shadow: none;
+    }
+
+    .tutorial-ghost {
+      background: rgba(99,102,241,.13);
+      color: #4f46e5;
+      box-shadow: none;
+    }
+
+    .tutorial-character {
+      font-size: 48px;
+      margin-bottom: 6px;
+    }
+
+    .tutorial-mini-map {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .tutorial-dot {
+      height: 8px;
+      border-radius: 999px;
+      background: #cbd5e1;
+    }
+
+    .tutorial-dot.active {
+      background: linear-gradient(90deg, #06b6d4, #6366f1);
+    }
+
+  
+    .schedule-delete {
+      width: 100%;
+      margin-top: 6px;
+      padding: 7px 9px;
+      font-size: 12px;
+      background: rgba(239,68,68,.14);
+      color: #b91c1c;
+      border: 1px solid rgba(239,68,68,.25);
+      box-shadow: none;
+    }
+
+    .recurring-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .recurring-card {
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(99,102,241,.16);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 10px 22px rgba(15,23,42,.08);
+    }
+
+    .recurring-card h4 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .recurring-card input,
+    .recurring-card textarea {
+      width: 96%;
+      margin: 5px 0;
+    }
+
+    .mini-note {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.6;
+      margin-top: 6px;
+    }
+
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="hero" style="text-align:center;">
+    <div class="brand-logo" onclick="showPage('main')" title="メインへ戻る">
+      <div class="logo-core">
+        <div class="logo-cap"></div>
+        <div class="logo-letters">UAM</div>
+        <div class="logo-book"></div>
+      </div>
+    </div>
+    <h1>大学課題管理 UAM</h1>
+    <p>University Assignment Management</p>
+    <div class="brand-mini">📅 ・ 📝 ・ 📚 ・ ⏰</div>
+  </div>
+  <div class="now-page">現在のページ：<span id="currentPageName">メイン</span></div>
+  <div class="nav">
+    <button id="nav-main" onclick="showPage('main')">メイン</button>
+    <button id="nav-schedule" onclick="showPage('schedule')">時間割</button>
+    <button id="nav-assignments" onclick="showPage('assignments')">課題</button>
+    <button id="nav-calendar" onclick="showPage('calendar')">カレンダー</button>
+    <button id="nav-settings" onclick="showPage('settings')">設定</button>
+    <button id="nav-backup" onclick="showPage('backup')">保存・復元</button>
+  </div>
+
+  <button class="tutorial-btn" onclick="startTutorial()">🎮 チュートリアル</button>
+
+  <div id="tutorialOverlay" class="tutorial-overlay">
+    <div class="tutorial-card">
+      <div class="tutorial-content">
+        <div class="tutorial-character" id="tutorialCharacter">🧭</div>
+        <div class="tutorial-stage" id="tutorialStage">QUEST 1 / 6</div>
+        <h2 class="tutorial-title" id="tutorialTitle">UAMへようこそ</h2>
+        <p class="tutorial-text" id="tutorialText"></p>
+        <div class="tutorial-quest" id="tutorialQuest"></div>
+        <div class="tutorial-progress">
+          <div class="tutorial-progress-bar" id="tutorialProgressBar"></div>
+        </div>
+        <div class="tutorial-mini-map" id="tutorialMiniMap"></div>
+        <div class="tutorial-actions">
+          <button class="tutorial-skip" onclick="closeTutorial()">閉じる</button>
+          <button class="tutorial-ghost" onclick="prevTutorial()">戻る</button>
+          <button onclick="nextTutorial()" id="tutorialNextBtn">次へ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main" class="page active">
+    <div class="page-title"><h2>今日の授業</h2><span class="badge">MAIN</span></div>
+    <div class="hint">今日の授業が自動で表示されます。講義中の授業は大きく、次の授業は点線、終了済みは薄く表示されます。</div>
+    <div id="todayClasses"></div>
+  </div>
+
+  <div id="schedule" class="page">
+    <div class="page-title"><h2>時間割</h2><span class="badge">SCHEDULE</span></div>
+    <div class="hint">授業形式を選べます。空きコマは白で表示されます。オンデマンド系は下の専用枠に自動で表示されます。</div>
+    <div class="section"><h3>オンデマンド系の授業</h3><div id="ondemandList"></div></div>
+    <div id="scheduleTable"></div>
+    <div class="save-bar"><button onclick="saveSchedule()">時間割を保存</button></div>
+  </div>
+
+  <div id="assignments" class="page">
+    <div class="page-title"><h2>課題管理</h2><span class="badge">TASKS</span></div>
+    <div class="hint">課題の締切はカレンダーにも自動反映されます。</div>
+    <div class="section">
+      <select id="linkedSubject"></select>
+      <input id="className" placeholder="授業名">
+      <input id="taskName" placeholder="課題名">
+      <input id="deadline" type="date">
+      <select id="priority"><option value="high">優先度：高</option><option value="middle">優先度：中</option><option value="low">優先度：低</option></select>
+      <br><textarea id="memo" placeholder="メモ（任意）"></textarea><br>
+      <button onclick="addTask()">課題を追加</button>
+    </div>
+    <h3>未完了</h3><div id="activeTaskList"></div>
+    <h3>完了済み</h3><div id="doneTaskList"></div>
+  </div>
+
+  <div id="calendar" class="page">
+    <div class="page-title"><h2>カレンダー</h2><span class="badge">CALENDAR</span></div>
+    <div class="hint">課題の締切は自動表示されます。シフト・部活・サークル・その他予定はここで追加・削除できます。</div>
+    <div class="section">
+      <h3>予定を追加</h3>
+      <div class="calendar-form-grid">
+        <input id="eventTitle" placeholder="予定名">
+        <select id="eventType"><option value="シフト">シフト</option><option value="部活">部活</option><option value="サークル">サークル</option><option value="その他">その他</option></select>
+        <input id="eventDate" type="date">
+        <input id="eventStart" type="time">
+        <input id="eventEnd" type="time">
+        <select id="eventColor"><option value="#dbeafe">青</option><option value="#ede9fe">紫</option><option value="#dcfce7">緑</option><option value="#fef3c7">黄色</option><option value="#ffe4e6">赤</option><option value="#f1f5f9">グレー</option></select>
+      </div>
+      <textarea id="eventMemo" placeholder="メモ（任意）"></textarea><br>
+      <button onclick="addEvent()">予定を追加</button>
+    </div>
+    <div class="section"><div class="calendar-top"><button onclick="changeMonth(-1)">前の月</button><div id="calendarMonth" class="calendar-month"></div><button onclick="changeMonth(1)">次の月</button></div><div id="calendarGrid"></div></div>
+  </div>
+
+  <div id="settings" class="page">
+    <div class="page-title"><h2>設定</h2><span class="badge">SETTINGS</span></div>
+    <div class="section">
+      <h3>基本情報</h3>
+      <input id="universityName" placeholder="大学名"><input id="faculty" placeholder="学部"><input id="department" placeholder="学科"><input id="major" placeholder="専攻（任意）">
+      <select id="grade"><option value="">学年</option><option>1年</option><option>2年</option><option>3年</option><option>4年</option></select>
+      <select id="termType"><option value="">学期制度</option><option>セメスター</option><option>クウォーター</option></select>
+      <button onclick="saveProfile()">基本情報を保存</button><div id="profileView"></div>
+    </div>
+    <div class="section"><h3>テーマ</h3><select id="themeSelect" onchange="changeTheme()"><option value="default">ネオンキャンパス</option><option value="blue">ブルースカイ</option><option value="green">ミントグリーン</option><option value="dark">ナイトモード</option><option value="pink">ピンクポップ</option></select></div>
+    <div class="section"><h3>各時限の時間設定</h3><div id="periodSettings"></div><button onclick="savePeriodTimes()">時限時間を保存</button></div>
+
+    <div class="section">
+      <h3>毎回ある課題の自動登録</h3>
+      <div class="hint">
+        時間割に登録した科目ごとに、毎回出る課題を設定できます。授業終了後にUAMを開くと、自動で課題管理へ追加されます。
+      </div>
+      <div id="recurringAssignmentSettings"></div>
+      <button onclick="saveRecurringAssignments()">毎回課題設定を保存</button>
+    </div>
+  </div>
+
+  <div id="backup" class="page">
+    <div class="page-title"><h2>保存・復元</h2><span class="badge">BACKUP</span></div>
+    <div class="backup-box"><button onclick="exportData()">バックアップを書き出す</button><br><br><input type="file" id="importFile" accept=".json"><button onclick="importData()">バックアップを読み込む</button></div>
+  </div>
+</div>
+
+<script>
+const days=["月","火","水","木","金","土"], periods=[1,2,3,4,5,6,7];
+const pageNames={main:"メイン",schedule:"時間割",assignments:"課題",calendar:"カレンダー",settings:"設定",backup:"保存・復元"};
+const palettes={
+ default:["#dbeafe","#e0e7ff","#ede9fe","#fce7f3","#ffe4e6","#fef3c7","#dcfce7","#ccfbf1","#e0f2fe","#f1f5f9"],
+ blue:["#dbeafe","#bfdbfe","#93c5fd","#e0f2fe","#cffafe","#ccfbf1","#e0e7ff","#c7d2fe","#f0f9ff","#eff6ff"],
+ green:["#dcfce7","#bbf7d0","#86efac","#d9f99d","#ecfccb","#ccfbf1","#a7f3d0","#f0fdf4","#f7fee7","#e2fbe8"],
+ dark:["#c7d2fe","#ddd6fe","#fbcfe8","#fecdd3","#fde68a","#bbf7d0","#99f6e4","#bae6fd","#e5e7eb","#d1d5db"],
+ pink:["#fce7f3","#fbcfe8","#f9a8d4","#ffe4e6","#fecdd3","#fed7aa","#fef3c7","#ede9fe","#e0e7ff","#fff1f2"]
+};
+let currentPage="main";
+let profile=JSON.parse(localStorage.getItem("profile"))||{};
+let theme=localStorage.getItem("theme")||"default";
+let tasks=JSON.parse(localStorage.getItem("tasks"))||[];
+let recurringAssignments=JSON.parse(localStorage.getItem("recurringAssignments"))||{};
+let schedule=JSON.parse(localStorage.getItem("schedule"))||{};
+let events=JSON.parse(localStorage.getItem("events"))||[];
+let currentMonth=new Date();
+let periodTimes=JSON.parse(localStorage.getItem("periodTimes"))||{1:{start:"09:00",end:"10:30"},2:{start:"10:40",end:"12:10"},3:{start:"13:00",end:"14:30"},4:{start:"14:40",end:"16:10"},5:{start:"16:20",end:"17:50"},6:{start:"18:00",end:"19:30"},7:{start:"19:40",end:"21:10"}};
+
+function showPage(id){currentPage=id;document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active-nav"));document.getElementById("nav-"+id).classList.add("active-nav");currentPageName.textContent=pageNames[id];renderAll();}
+function setTheme(bg,card,text,main,accent){document.documentElement.style.setProperty("--bg",bg);document.documentElement.style.setProperty("--card",card);document.documentElement.style.setProperty("--text",text);document.documentElement.style.setProperty("--main",main);document.documentElement.style.setProperty("--accent",accent);}
+function applyTheme(){themeSelect.value=theme;if(theme==="blue")setTheme("#eef6ff","#fff","#172033","#2563eb","#38bdf8");else if(theme==="green")setTheme("#f0fdf4","#fff","#172033","#16a34a","#22c55e");else if(theme==="dark")setTheme("#0f172a","#1e293b","#f8fafc","#6366f1","#8b5cf6");else if(theme==="pink")setTheme("#fff1f8","#fff","#172033","#ec4899","#f472b6");else setTheme("#eef2f7","#fff","#172033","#6366f1","#8b5cf6");}
+function changeTheme(){theme=themeSelect.value;localStorage.setItem("theme",theme);renderAll();}
+function saveProfile(){profile={universityName:universityName.value,faculty:faculty.value,department:department.value,major:major.value,grade:grade.value,termType:termType.value};localStorage.setItem("profile",JSON.stringify(profile));showProfile();}
+function showProfile(){universityName.value=profile.universityName||"";faculty.value=profile.faculty||"";department.value=profile.department||"";major.value=profile.major||"";grade.value=profile.grade||"";termType.value=profile.termType||"";profileView.innerHTML=`<p>${profile.universityName||"大学名未設定"}　${profile.faculty||""} ${profile.department||""} ${profile.major||""}<br>学年：${profile.grade||"未設定"}　学期制度：${profile.termType||"未設定"}</p>`;}
+function renderPeriodSettings(){periodSettings.innerHTML=periods.map(p=>`<div>${p}限：<input id="start${p}" type="time" value="${periodTimes[p].start}">〜<input id="end${p}" type="time" value="${periodTimes[p].end}"></div>`).join("");}
+function savePeriodTimes(){periods.forEach(p=>periodTimes[p]={start:document.getElementById("start"+p).value,end:document.getElementById("end"+p).value});localStorage.setItem("periodTimes",JSON.stringify(periodTimes));alert("時限時間を保存しました");renderAll();}
+function toggleColorPanel(key){document.getElementById("panel_"+key).classList.toggle("open");}
+function chooseColor(key,color){document.getElementById("color_"+key).value=color;document.getElementById("cell_"+key).style.background=color;document.getElementById("preview_"+key).style.background=color;document.querySelectorAll(".dot_"+key).forEach(dot=>dot.classList.remove("selected"));document.getElementById("dot_"+key+"_"+color.replace("#","")).classList.add("selected");document.getElementById("panel_"+key).classList.remove("open");}
+function renderColorDots(key,selectedColor){let html=`<input type="hidden" id="color_${key}" value="${selectedColor}"><div class="selected-color-preview" id="preview_${key}" style="background:${selectedColor}"></div><button type="button" class="color-toggle" onclick="toggleColorPanel('${key}')">色を選ぶ</button><div id="panel_${key}" class="color-panel"><div class="color-palette">`; (palettes[theme]||palettes.default).forEach(color=>{html+=`<div id="dot_${key}_${color.replace("#","")}" class="color-dot dot_${key} ${color===selectedColor?"selected":""}" style="background:${color}" onclick="chooseColor('${key}','${color}')"></div>`}); return html+"</div></div>";}
+
+function clearScheduleCell(key){
+  if(!confirm("この時間割コマを削除して、白い空きコマに戻しますか？")) return;
+
+  const subjectEl=document.getElementById("subject_"+key);
+  const teacherEl=document.getElementById("teacher_"+key);
+  const roomEl=document.getElementById("room_"+key);
+  const formatEl=document.getElementById("format_"+key);
+  const colorEl=document.getElementById("color_"+key);
+  const cellEl=document.getElementById("cell_"+key);
+  const previewEl=document.getElementById("preview_"+key);
+
+  if(subjectEl)subjectEl.value="";
+  if(teacherEl)teacherEl.value="";
+  if(roomEl)roomEl.value="";
+  if(formatEl)formatEl.value="対面授業";
+  if(colorEl)colorEl.value="#ffffff";
+  if(cellEl)cellEl.style.background="#ffffff";
+  if(previewEl)previewEl.style.background="#ffffff";
+
+  schedule[key]={
+    subject:"",
+    teacher:"",
+    room:"",
+    format:"対面授業",
+    color:"#ffffff",
+    deadlineType:"終日",
+    deadlineDate:"",
+    ondemandStart:"",
+    ondemandEnd:""
+  };
+
+  localStorage.setItem("schedule",JSON.stringify(schedule));
+  renderAll();
+}
+
+function renderScheduleTable(){let html="<table><tr><th>時限</th>"+days.map(d=>`<th>${d}</th>`).join("")+"</tr>";periods.forEach(p=>{html+=`<tr><th>${p}限<br>${periodTimes[p].start}〜${periodTimes[p].end}</th>`;days.forEach(day=>{const key=day+p,item=schedule[key]||{},isEmpty=!item.subject,colors=palettes[theme]||palettes.default,bg=isEmpty?"#ffffff":(item.color||colors[(p+days.indexOf(day))%colors.length]),format=item.format||"対面授業";html+=`<td id="cell_${key}" style="background:${bg}">${isEmpty?`<div class="format-tag">空きコマ</div>`:""}<input class="cell-input" id="subject_${key}" placeholder="科目名" value="${item.subject||""}"><input class="cell-input" id="teacher_${key}" placeholder="先生" value="${item.teacher||""}"><input class="cell-input" id="room_${key}" placeholder="教室番号" value="${item.room||""}"><select class="cell-select" id="format_${key}"><option ${format==="対面授業"?"selected":""}>対面授業</option><option ${format==="ブレンド型オンデマンド授業"?"selected":""}>ブレンド型オンデマンド授業</option><option ${format==="オンデマンド授業"?"selected":""}>オンデマンド授業</option></select>${!isEmpty?`<div class="format-tag">${format}</div>`:""}<div class="color-label">現在の色</div>${renderColorDots(key,bg)}<button type="button" class="schedule-delete" onclick="clearScheduleCell('${key}')">このコマを削除</button></td>`});html+="</tr>"});scheduleTable.innerHTML=html+"</table>";}
+function isOndemandFormat(f){return f==="オンデマンド授業"||f==="ブレンド型オンデマンド授業";}
+function toggleOndemandTime(key){document.getElementById("timeWindow_"+key).classList.toggle("show",document.getElementById("deadlineType_"+key).value==="指定日＋指定時間内");}
+function renderOndemandList(){let cards="";days.forEach(day=>periods.forEach(p=>{const key=day+p,item=schedule[key]||{};if(item.subject&&isOndemandFormat(item.format)){const bg=item.color||"#dbeafe",type=item.deadlineType||"終日";cards+=`<div class="ondemand-card" style="background:${bg}"><h3>${item.subject}</h3><p>${day}曜 ${p}限 / ${item.format}<br>先生：${item.teacher||"未設定"}<br>教室：${item.room||"なし・未設定"}</p><select id="deadlineType_${key}" onchange="toggleOndemandTime('${key}')"><option ${type==="終日"?"selected":""}>終日</option><option ${type==="指定日まで"?"selected":""}>指定日まで</option><option ${type==="指定日＋指定時間内"?"selected":""}>指定日＋指定時間内</option></select><input id="deadlineDate_${key}" type="date" value="${item.deadlineDate||""}"><div id="timeWindow_${key}" class="time-window ${type==="指定日＋指定時間内"?"show":""}"><input id="ondemandStart_${key}" type="time" value="${item.ondemandStart||""}"><input id="ondemandEnd_${key}" type="time" value="${item.ondemandEnd||""}"></div></div>`}}));ondemandList.innerHTML=cards?`<div class="ondemand-grid">${cards}</div>`:"<p>オンデマンド系の授業はまだ登録されていません。</p>";}
+function saveSchedule(){days.forEach(day=>periods.forEach(p=>{const key=day+p,old=schedule[key]||{};schedule[key]={subject:document.getElementById("subject_"+key).value,teacher:document.getElementById("teacher_"+key).value,room:document.getElementById("room_"+key).value,format:document.getElementById("format_"+key).value,color:document.getElementById("subject_"+key).value?document.getElementById("color_"+key).value:"#ffffff",deadlineType:old.deadlineType||"終日",deadlineDate:old.deadlineDate||"",ondemandStart:old.ondemandStart||"",ondemandEnd:old.ondemandEnd||""}}));days.forEach(day=>periods.forEach(p=>{const key=day+p,item=schedule[key]||{},typeEl=document.getElementById("deadlineType_"+key);if(typeEl){item.deadlineType=typeEl.value;item.deadlineDate=document.getElementById("deadlineDate_"+key)?.value||"";item.ondemandStart=document.getElementById("ondemandStart_"+key)?.value||"";item.ondemandEnd=document.getElementById("ondemandEnd_"+key)?.value||"";schedule[key]=item}}));localStorage.setItem("schedule",JSON.stringify(schedule));alert("時間割を保存しました");renderAll();}
+
+function getUniqueSubjectsWithSlots(){
+  const map={};
+  Object.keys(schedule).forEach(key=>{
+    const item=schedule[key];
+    if(item&&item.subject){
+      if(!map[item.subject]) map[item.subject]={subject:item.subject, slots:[]};
+      map[item.subject].slots.push({key,item});
+    }
+  });
+  return Object.values(map);
+}
+
+function renderRecurringAssignmentSettings(){
+  const subjects=getUniqueSubjectsWithSlots();
+  if(!subjects.length){
+    recurringAssignmentSettings.innerHTML="<p>時間割に科目を登録すると、ここで毎回課題を設定できます。</p>";
+    return;
+  }
+
+  let html='<div class="recurring-grid">';
+  subjects.forEach(s=>{
+    const r=recurringAssignments[s.subject]||{};
+    html+=`
+      <div class="recurring-card">
+        <h4>${s.subject}</h4>
+        <label>
+          <input type="checkbox" id="recurringEnabled_${s.subject}" ${r.enabled?"checked":""}>
+          この科目で毎回課題を自動登録する
+        </label>
+        <input id="recurringTask_${s.subject}" placeholder="毎回出る課題内容 例：リアクションペーパー" value="${r.taskName||""}">
+        <div>
+          締切：
+          <input id="recurringDueDays_${s.subject}" type="number" min="0" value="${r.dueDaysAfter??0}" style="width:90px;">
+          日後
+          <input id="recurringDueTime_${s.subject}" type="time" value="${r.dueTime||""}" style="width:130px;">
+        </div>
+        <textarea id="recurringMemo_${s.subject}" placeholder="メモ 例：K-SMAPYⅡで提出">${r.memo||""}</textarea>
+        <div class="mini-note">授業終了後、UAMを開いたタイミングで1回だけ課題管理へ追加します。</div>
+      </div>
+    `;
+  });
+  html+='</div>';
+  recurringAssignmentSettings.innerHTML=html;
+}
+
+function saveRecurringAssignments(){
+  const subjects=getUniqueSubjectsWithSlots();
+  subjects.forEach(s=>{
+    recurringAssignments[s.subject]={
+      enabled:document.getElementById("recurringEnabled_"+s.subject)?.checked||false,
+      taskName:document.getElementById("recurringTask_"+s.subject)?.value||"",
+      dueDaysAfter:Number(document.getElementById("recurringDueDays_"+s.subject)?.value||0),
+      dueTime:document.getElementById("recurringDueTime_"+s.subject)?.value||"",
+      memo:document.getElementById("recurringMemo_"+s.subject)?.value||"",
+      addedKeys:(recurringAssignments[s.subject]&&recurringAssignments[s.subject].addedKeys)||{}
+    };
+  });
+  localStorage.setItem("recurringAssignments",JSON.stringify(recurringAssignments));
+  alert("毎回課題設定を保存しました");
+  renderAll();
+}
+
+function dateStringFromDate(d){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function autoAddRecurringTasks(){
+  const todayName=getTodayDayName();
+  if(!todayName) return;
+
+  const now=new Date();
+  const todayStr=dateStringFromDate(now);
+  let changed=false;
+
+  periods.forEach(p=>{
+    const key=todayName+p;
+    const item=schedule[key];
+    if(!item||!item.subject) return;
+
+    const rule=recurringAssignments[item.subject];
+    if(!rule||!rule.enabled||!rule.taskName) return;
+
+    const end=new Date(todayStr+"T"+periodTimes[p].end);
+    if(now<end) return;
+
+    const addKey=todayStr+"_"+key;
+    rule.addedKeys=rule.addedKeys||{};
+    if(rule.addedKeys[addKey]) return;
+
+    const due=new Date(now);
+    due.setDate(due.getDate()+Number(rule.dueDaysAfter||0));
+    const deadline=dateStringFromDate(due);
+
+    const memoParts=[];
+    if(rule.dueTime) memoParts.push("締切時間："+rule.dueTime);
+    if(rule.memo) memoParts.push(rule.memo);
+    memoParts.push("自動登録："+todayName+"曜"+p+"限の授業終了後");
+
+    tasks.push({
+      className:item.subject,
+      taskName:rule.taskName,
+      deadline,
+      priority:"middle",
+      memo:memoParts.join("\\n"),
+      done:false
+    });
+
+    rule.addedKeys[addKey]=true;
+    recurringAssignments[item.subject]=rule;
+    changed=true;
+  });
+
+  if(changed){
+    localStorage.setItem("tasks",JSON.stringify(tasks));
+    localStorage.setItem("recurringAssignments",JSON.stringify(recurringAssignments));
+  }
+}
+
+function getSubjectList(){const list=[];Object.keys(schedule).forEach(k=>{const item=schedule[k];if(item.subject&&!list.some(x=>x.subject===item.subject))list.push(item)});return list;}
+function renderSubjectSelect(){linkedSubject.innerHTML=`<option value="">時間割から科目を選択</option>`+getSubjectList().map(s=>`<option value="${s.subject}">${s.subject}</option>`).join("");linkedSubject.onchange=()=>className.value=linkedSubject.value;}
+function getTodayDayName(){return {1:"月",2:"火",3:"水",4:"木",5:"金",6:"土"}[new Date().getDay()]||null;}
+function getClassStatus(p){const now=new Date(),today=now.toISOString().slice(0,10),start=new Date(today+"T"+periodTimes[p].start),end=new Date(today+"T"+periodTimes[p].end);if(now<start)return"開始前";if(now>=start&&now<=end)return"講義中";return"終了";}
+function getStatusOrder(s){return s==="講義中"?1:s==="開始前"?2:3} function getStatusClass(s){return s==="講義中"?"current-class":s==="開始前"?"next-class":"ended-class"}
+function getSubjectTasks(subject){return tasks.filter(t=>t.className===subject);}
+function getOndemandDeadlineText(item){if(!isOndemandFormat(item.format))return"";if(!item.deadlineDate)return"オンデマンド期限：未設定";if(item.deadlineType==="指定日＋指定時間内")return`オンデマンド期限：${item.deadlineDate} ${item.ondemandStart||"--:--"}〜${item.ondemandEnd||"--:--"}`;return`オンデマンド期限：${item.deadlineDate}（${item.deadlineType||"終日"}）`;}
+function renderTodayClasses(){const today=getTodayDayName();if(!today){todayClasses.innerHTML="<p>今日は日曜日です。登録された授業はありません。</p>";return}let items=[];periods.forEach(p=>{const item=schedule[today+p];if(item&&item.subject)items.push({period:p,item,status:getClassStatus(p)})});items.sort((a,b)=>getStatusOrder(a.status)-getStatusOrder(b.status));let html=`<h3>今日は${today}曜日</h3>`;if(!items.length)html+="<p>今日の授業は登録されていません。</p>";items.forEach(o=>{const rel=getSubjectTasks(o.item.subject),un=rel.filter(t=>!t.done).length,fin=rel.filter(t=>t.done).length,taskInfo=rel.length?`課題あり：未完了 ${un}件 / 完了 ${fin}件`:"課題なし",deadlineInfo=getOndemandDeadlineText(o.item);html+=`<div class="today-card ${getStatusClass(o.status)}" style="background:${o.item.color||"#dbeafe"}"><h2>${o.period}限：${o.item.subject}</h2><p>時間：${periodTimes[o.period].start}〜${periodTimes[o.period].end}<br>授業形式：${o.item.format||"対面授業"}<br>先生：${o.item.teacher||"未設定"}<br>教室：${o.item.room||"未設定"}<br>${deadlineInfo?deadlineInfo+"<br>":""}${taskInfo}</p><span class="status">${o.status}</span><br><br><button onclick="quickAddFromToday('${o.item.subject}')">この授業の課題を追加</button></div>`});todayClasses.innerHTML=html;}
+function quickAddFromToday(subject){showPage("assignments");className.value=subject;linkedSubject.value=subject;taskName.focus();}
+function addTask(){if(!className.value||!taskName.value||!deadline.value){alert("授業名・課題名・締切日を入力してね");return}tasks.push({className:className.value,taskName:taskName.value,deadline:deadline.value,priority:priority.value,memo:memo.value,done:false});localStorage.setItem("tasks",JSON.stringify(tasks));className.value="";taskName.value="";deadline.value="";memo.value="";linkedSubject.value="";renderAll();}
+function daysUntil(deadline){const today=new Date();today.setHours(0,0,0,0);const d=new Date(deadline);d.setHours(0,0,0,0);return Math.ceil((d-today)/(1000*60*60*24));}
+function deadlineText(deadline){const diff=daysUntil(deadline);if(diff<0)return`<span class="danger">締切超過 ${Math.abs(diff)}日</span>`;if(diff===0)return`<span class="danger">あと0日（今日まで）</span>`;if(diff<=3)return`<span class="danger">あと${diff}日</span>`;return`<span class="safe">あと${diff}日</span>`;}
+function deadlineClass(deadline){const diff=daysUntil(deadline);return diff<=0?"urgent":diff<=3?"soon":"normal";}
+function renderTasks(){activeTaskList.innerHTML="";doneTaskList.innerHTML="";tasks.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));tasks.forEach((t,i)=>{const div=document.createElement("div");div.className="task "+(t.done?"done":deadlineClass(t.deadline));div.innerHTML=`<strong>${t.className}</strong><br>課題：${t.taskName}<br>締切：${t.deadline}　${deadlineText(t.deadline)}<br>優先度：${t.priority||"未設定"}<br>${t.memo?"メモ："+t.memo+"<br>":""}<button onclick="toggleTask(${i})">${t.done?"戻す":"完了"}</button><button onclick="deleteTask(${i})">削除</button>`;(t.done?doneTaskList:activeTaskList).appendChild(div)});}
+function toggleTask(i){tasks[i].done=!tasks[i].done;localStorage.setItem("tasks",JSON.stringify(tasks));renderAll();} function deleteTask(i){tasks.splice(i,1);localStorage.setItem("tasks",JSON.stringify(tasks));renderAll();}
+function addEvent(){if(!eventTitle.value||!eventDate.value){alert("予定名と日付を入力してね");return}events.push({title:eventTitle.value,type:eventType.value,date:eventDate.value,start:eventStart.value,end:eventEnd.value,color:eventColor.value,memo:eventMemo.value});localStorage.setItem("events",JSON.stringify(events));eventTitle.value="";eventStart.value="";eventEnd.value="";eventMemo.value="";renderAll();}
+function deleteEvent(i){events.splice(i,1);localStorage.setItem("events",JSON.stringify(events));renderAll();}
+function changeMonth(n){currentMonth.setMonth(currentMonth.getMonth()+n);renderCalendar();}
+function renderCalendar(){const year=currentMonth.getFullYear(),month=currentMonth.getMonth();calendarMonth.textContent=year+"年 "+(month+1)+"月";const first=new Date(year,month,1),last=new Date(year,month+1,0);let html=`<div class="calendar-grid">`;["日","月","火","水","木","金","土"].forEach(d=>html+=`<div class="calendar-head">${d}</div>`);for(let i=0;i<first.getDay();i++)html+=`<div class="calendar-day empty"></div>`;for(let d=1;d<=last.getDate();d++){const dateStr=`${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;let dayEvents=[];events.forEach((e,i)=>{if(e.date===dateStr)dayEvents.push({...e,index:i,isUser:true})});tasks.forEach(t=>{if(t.deadline===dateStr)dayEvents.push({title:"課題："+t.className+" "+t.taskName,color:t.done?"#e5e7eb":"#ffe4e6",start:"",end:"",done:t.done})});html+=`<div class="calendar-day"><div class="calendar-date">${d}</div>`;dayEvents.forEach(ev=>{html+=`<div class="calendar-event" style="background:${ev.color}"><strong>${ev.title}</strong><br>${ev.type?ev.type+"<br>":""}${ev.start?ev.start+"〜"+(ev.end||"")+"<br>":""}${ev.done!==undefined?(ev.done?"完了":"未完了")+"<br>":""}${ev.memo?ev.memo+"<br>":""}${ev.isUser?`<button class="event-delete" onclick="deleteEvent(${ev.index})">削除</button>`:""}</div>`});html+=`</div>`}calendarGrid.innerHTML=html+"</div>";}
+function exportData(){const data={profile,theme,tasks,schedule,periodTimes,events,recurringAssignments};const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="UAM_backup.json";a.click();URL.revokeObjectURL(url);}
+function importData(){const file=importFile.files[0];if(!file){alert("読み込むファイルを選んでね");return}const reader=new FileReader();reader.onload=e=>{const data=JSON.parse(e.target.result);profile=data.profile||{};theme=data.theme||"default";tasks=data.tasks||[];schedule=data.schedule||{};periodTimes=data.periodTimes||periodTimes;events=data.events||[];recurringAssignments=data.recurringAssignments||{};localStorage.setItem("profile",JSON.stringify(profile));localStorage.setItem("theme",theme);localStorage.setItem("tasks",JSON.stringify(tasks));localStorage.setItem("schedule",JSON.stringify(schedule));localStorage.setItem("periodTimes",JSON.stringify(periodTimes));localStorage.setItem("events",JSON.stringify(events));localStorage.setItem("recurringAssignments",JSON.stringify(recurringAssignments));alert("バックアップを読み込みました");renderAll()};reader.readAsText(file);}
+function renderAll(){showProfile();applyTheme();autoAddRecurringTasks();renderPeriodSettings();renderOndemandList();renderScheduleTable();renderSubjectSelect();renderTodayClasses();renderTasks();renderCalendar();renderRecurringAssignmentSettings();document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active-nav"));document.getElementById("nav-"+currentPage).classList.add("active-nav");currentPageName.textContent=pageNames[currentPage];}
+
+const tutorialSteps = [
+  {
+    page:"main",
+    icon:"🧭",
+    title:"UAMへようこそ",
+    text:"ここは大学生活の司令室。今日の授業、課題、予定を一気に確認できます。",
+    quest:"まずは <strong>メイン</strong> で今日の授業バナーを確認しよう。講義中・開始前・終了済みが自動で表示されます。"
+  },
+  {
+    page:"schedule",
+    icon:"📚",
+    title:"時間割を作ろう",
+    text:"月曜〜土曜、1〜7限まで登録できます。科目名・先生・教室・授業形式を入力できます。",
+    quest:"クエスト：<strong>時間割</strong> ページで科目を1つ入力して、好きな色を選んで保存しよう。"
+  },
+  {
+    page:"schedule",
+    icon:"💻",
+    title:"オンデマンド授業も管理",
+    text:"オンデマンド授業やブレンド型オンデマンド授業は、時間割上部の専用エリアにまとまります。",
+    quest:"クエスト：授業形式を <strong>オンデマンド授業</strong> にして保存すると、上の専用枠に登場します。"
+  },
+  {
+    page:"assignments",
+    icon:"📝",
+    title:"課題を登録しよう",
+    text:"時間割に登録した科目を選ぶと、授業名が自動で入ります。締切が近い課題は色で警告されます。",
+    quest:"クエスト：<strong>課題</strong> ページで課題名と締切を入れて追加しよう。完了ボタンで消化できます。"
+  },
+  {
+    page:"calendar",
+    icon:"📅",
+    title:"カレンダーで全部見る",
+    text:"課題の締切は自動でカレンダーに反映されます。シフト・部活・サークル・その他予定も追加できます。",
+    quest:"クエスト：<strong>カレンダー</strong> ページで予定を1つ追加してみよう。予定は削除もできます。"
+  },
+  {
+    page:"backup",
+    icon:"💾",
+    title:"バックアップで守ろう",
+    text:"UAMのデータはブラウザに保存されます。大事な時間割や課題はバックアップを書き出して守れます。",
+    quest:"最終クエスト：<strong>保存・復元</strong> からバックアップを書き出そう。これで冒険のセーブ完了。"
+  }
+];
+
+let tutorialIndex = 0;
+
+function startTutorial(){
+  tutorialIndex = 0;
+  tutorialOverlay.classList.add("show");
+  renderTutorial();
+}
+
+function closeTutorial(){
+  tutorialOverlay.classList.remove("show");
+}
+
+function renderTutorial(){
+  const step = tutorialSteps[tutorialIndex];
+  showPage(step.page);
+
+  tutorialOverlay.classList.add("show");
+  tutorialCharacter.textContent = step.icon;
+  tutorialStage.textContent = "QUEST " + (tutorialIndex + 1) + " / " + tutorialSteps.length;
+  tutorialTitle.textContent = step.title;
+  tutorialText.textContent = step.text;
+  tutorialQuest.innerHTML = step.quest;
+
+  const percent = ((tutorialIndex + 1) / tutorialSteps.length) * 100;
+  tutorialProgressBar.style.width = percent + "%";
+
+  tutorialMiniMap.innerHTML = tutorialSteps.map((_, i) => {
+    return `<div class="tutorial-dot ${i <= tutorialIndex ? "active" : ""}"></div>`;
+  }).join("");
+
+  tutorialNextBtn.textContent = tutorialIndex === tutorialSteps.length - 1 ? "完了" : "次へ";
+}
+
+function nextTutorial(){
+  if(tutorialIndex >= tutorialSteps.length - 1){
+    closeTutorial();
+    localStorage.setItem("uamTutorialDone", "true");
+    return;
+  }
+  tutorialIndex++;
+  renderTutorial();
+}
+
+function prevTutorial(){
+  if(tutorialIndex > 0){
+    tutorialIndex--;
+    renderTutorial();
+  }
+}
+
+renderAll();showPage("main");setInterval(renderTodayClasses,60000);
+</script>
+</body>
+</html>
